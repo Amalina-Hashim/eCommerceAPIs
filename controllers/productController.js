@@ -139,16 +139,23 @@ exports.getFavoriteProducts = async (req, res) => {
 
 exports.addProduct = async (req, res) => {
   try {
-    const { name, category, price, description, images } = req.body;
-    const product = new Product({
-      name,
-      category,
-      price,
-      description,
-      images,
-    });
-    await product.save();
-    res.json({ success: true, product });
+    const products = req.body;
+    const createdProducts = [];
+
+    for (const product of products) {
+      const { name, category, price, description, images } = product;
+      const newProduct = new Product({
+        name,
+        category,
+        price,
+        description,
+        images,
+      });
+      await newProduct.save();
+      createdProducts.push(newProduct);
+    }
+
+    res.json({ success: true, products: createdProducts });
   } catch (error) {
     console.error("Error adding product:", error);
     res.status(500).json({ error: "Internal server error" });
