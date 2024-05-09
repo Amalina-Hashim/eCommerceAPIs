@@ -2,12 +2,17 @@ const Order = require("../models/Order");
 
 exports.getAllOrders = async (req, res) => {
   try {
-    const orders = await Order.find().populate("user", "username email"); 
+    const orders = await Order.find()
+      .populate("user", "username email") 
+      .populate({
+        path: "items.product", 
+      });
     res.json(orders);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 exports.markOrderAsShipped = async (req, res) => {
   const { orderId } = req.params;
