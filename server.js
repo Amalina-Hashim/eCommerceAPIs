@@ -16,7 +16,7 @@ const ordersRoutes = require("./routes/ordersRoutes");
 const app = express();
 
 const corsOptions = {
-  origin: "http://localhost:3000",
+  origin: ["http://localhost:3000", "http://localhost:3001"],
   credentials: true,
 };
 app.use(cors(corsOptions));

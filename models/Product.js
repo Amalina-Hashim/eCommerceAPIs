@@ -9,7 +9,6 @@ const productSchema = new mongoose.Schema({
   isFavorite: { type: Boolean, default: false },
 });
 
-// Function to set price with two decimal places
 function setPriceWithTwoDecimalPlaces(price) {
   console.log("Setting price:", price);
   return parseFloat(price).toFixed(2);

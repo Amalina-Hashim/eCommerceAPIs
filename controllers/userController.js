@@ -3,14 +3,12 @@ const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 
 
-// Controller functions
 async function signup(req, res) {
   try {
     const { username, email, password } = req.body;
     const user = new User({ username, email, password });
     await user.save();
 
-    // Generate a token for the newly created user
     const token = user.generateAuthToken();
 
     res
@@ -87,8 +85,7 @@ const updateUserProfile = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-
-    // Optionally, you can generate a new token if needed
+    
     const token = user.generateAuthToken();
 
    

@@ -2,7 +2,7 @@ const Order = require("../models/Order");
 
 exports.getAllOrders = async (req, res) => {
   try {
-    const orders = await Order.find().populate("user", "username email"); // Populate user details
+    const orders = await Order.find().populate("user", "username email"); 
     res.json(orders);
   } catch (error) {
     res.status(500).json({ message: error.message });
