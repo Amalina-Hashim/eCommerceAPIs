@@ -51,7 +51,6 @@ exports.removeFromCart = async (req, res) => {
       (p) => p.product && p.product.toString() !== productId
     );
 
-    // Calculate and update totalAmount
     cart.totalAmount = cart.products.reduce((acc, current) => {
       return acc + current.product.price * current.quantity;
     }, 0);
