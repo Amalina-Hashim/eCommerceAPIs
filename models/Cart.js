@@ -13,14 +13,10 @@ const cartSchema = new mongoose.Schema(
         quantity: { type: Number, default: 1 },
       },
     ],
+    status: { type: String, default: "active", enum: ["active", "completed"] }, 
   },
   { strictPopulate: false }
 );
 
-cartSchema.virtual("totalAmount").get(function () {
-  return this.products.reduce((acc, current) => {
-    return acc + current.product.price * current.quantity;
-  }, 0);
-});
 
 module.exports = mongoose.model("Cart", cartSchema);

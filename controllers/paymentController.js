@@ -1,6 +1,6 @@
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const Order = require("../models/Order");
-const CartController = require("../controllers/cartController");
+const Cart = require("../models/Cart");
 
 exports.makePayment = async (req, res) => {
   try {
@@ -30,15 +30,23 @@ exports.makePayment = async (req, res) => {
 
       await order.save();
     } else {
-      items.forEach((item) => {
-        order.items.push({
-          product: item.product,
-          quantity: item.quantity,
+      if (items && Array.isArray(items)) {
+        items.forEach((item) => {
+          order.items.push({
+            product: item.product,
+            quantity: item.quantity,
+          });
         });
-      });
+      }
       order.paymentStatus = "paid";
 
       await order.save();
+    }
+
+    const cart = await Cart.findOne({ user: userId, status: "active" });
+    if (cart) {
+      cart.status = "completed";
+      await cart.save();
     }
 
     

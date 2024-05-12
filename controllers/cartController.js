@@ -12,7 +12,7 @@ exports.addToCart = async (req, res) => {
     }
 
     let cart = await Cart.findOneAndUpdate(
-      { user: userId },
+      { user: userId, status: "active" },
       {
         $addToSet: {
           products: {
@@ -68,7 +68,7 @@ exports.getUserCart = async (req, res) => {
   try {
     const userId = req.params.userId;
 
-    let cart = await Cart.findOne({ user: userId }).populate({
+    let cart = await Cart.findOne({ user: userId, status: "active" }).populate({
       path: "products",
       populate: { path: "product", model: "Product" },
     });
