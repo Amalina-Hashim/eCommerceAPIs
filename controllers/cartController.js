@@ -40,16 +40,44 @@ exports.addToCart = async (req, res) => {
 
 exports.removeFromCart = async (req, res) => {
   try {
-    const { userId, productId } = req.body;
+    const { userId, productId, cartId } = req.body;
+    console.log("Requested to remove product ID:", productId);
 
-    let cart = await Cart.findOne({ user: userId });
+    let cart = await Cart.findOneAndUpdate(
+      { _id: cartId, user: userId, status: "active" }, 
+      { $set: { updatedAt: new Date() } },
+      { new: true }
+    ).populate("products.product");
+
     if (!cart) {
       return res.status(404).json({ message: "Cart not found for this user" });
     }
 
-    cart.products = cart.products.filter(
-      (p) => p.product && p.product.toString() !== productId
-    );
+    console.log("Cart items before removal:");
+    cart.products.forEach((p) => {
+      console.log(
+        `Product ID: ${p.product._id.toString()}, Name: ${
+          p.product.name
+        }, Quantity: ${p.quantity}`
+      );
+    });
+
+    cart.products = cart.products.filter((p) => {
+      const isSameProduct = p.product._id.toString() === productId;
+      console.log(
+        `Checking product: ${p.product._id.toString()} against ${productId}: ${isSameProduct}`
+      );
+      return !isSameProduct;
+    });
+
+    console.log("Cart items after removal, before save:");
+    cart.products.forEach((p) => {
+      console.log(
+        `Remaining Product ID: ${p.product._id.toString()}, Name: ${
+          p.product.name
+        }, Quantity: ${p.quantity}`
+      );
+    });
 
     cart.totalAmount = cart.products.reduce((acc, current) => {
       return acc + current.product.price * current.quantity;
@@ -62,6 +90,8 @@ exports.removeFromCart = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+
 
 exports.getUserCart = async (req, res) => {
   console.log("Received userId:", req.params.userId);
