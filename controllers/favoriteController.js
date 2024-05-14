@@ -1,5 +1,6 @@
 const Favorite = require("../models/Favorite");
 const jwt = require("jsonwebtoken");
+const Product = require("../models/Product");
 
 exports.addToFavorites = async (req, res) => {
   try {
@@ -22,6 +23,13 @@ exports.addToFavorites = async (req, res) => {
 
       favorites.products.push(productId);
       await favorites.save();
+
+      await Product.findByIdAndUpdate(productId, {
+        $set: { isFavorite: true },
+      });
+      console.log(`Product ${productId} marked as favorite`);
+      const updatedProduct = await Product.findById(productId);
+      console.log(`isFavorite field: ${updatedProduct.isFavorite}`);
 
       res.set("x-auth-token", token); 
       res.json({
@@ -61,6 +69,10 @@ exports.removeFromFavorites = async (req, res) => {
       }
 
       await favorites.save();
+
+      await Product.findByIdAndUpdate(productId, {
+        $set: { isFavorite: false },
+      });
 
       res.set("x-auth-token", token);
       return res.json({ message: "Product removed from favorites" });
