@@ -28,9 +28,15 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-
 // Middleware
-app.use("/uploads", express.static("uploads"));
+app.use(
+  "/uploads",
+  express.static("uploads", {
+    maxAge: "7d",
+    etag: true,
+    lastModified: true,
+  }),
+);
 app.use(bodyParser.json());
 
 // Routes
@@ -43,7 +49,6 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/admin/auth", adminAuthRoutes);
 app.use("/api/orders", ordersRoutes);
-
 
 mongoose
   .connect(process.env.MONGO_DB_URI)

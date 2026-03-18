@@ -2,25 +2,42 @@ const Product = require("../models/Product");
 const User = require("../models/User");
 const Favorite = require("../models/Favorite");
 
+const toAbsoluteImageUrl = (req, image) => {
+  if (typeof image !== "string") {
+    return null;
+  }
+
+  if (image.startsWith("uploads/")) {
+    return `${req.protocol}://${req.get("host")}/${image}`;
+  }
+
+  return image;
+};
+
+const withNormalizedImages = (req, productDoc) => {
+  const product = productDoc.toObject ? productDoc.toObject() : productDoc;
+  const images = Array.isArray(product.images) ? product.images : [];
+  const updatedImages = images
+    .map((image) => toAbsoluteImageUrl(req, image))
+    .filter(Boolean);
+
+  return {
+    ...product,
+    images: updatedImages,
+  };
+};
+
 exports.getAllProducts = async (req, res) => {
   try {
-    const products = await Product.find({});
+    const products = await Product.find({})
+      .select("name category price images isFavorite")
+      .lean();
 
-    const productsWithUpdatedImages = products.map((product) => {
-      const updatedImages = product.images.map((image) => {
-        if (image.startsWith("uploads/")) {
-          return `${req.protocol}://${req.get("host")}/${image}`;
-        } else {
-          return image;
-        }
-      });
+    const productsWithUpdatedImages = products.map((product) =>
+      withNormalizedImages(req, product),
+    );
 
-      return {
-        ...product.toObject(),
-        images: updatedImages,
-      };
-    });
-
+    res.set("Cache-Control", "public, max-age=60");
     res.json(productsWithUpdatedImages);
   } catch (error) {
     console.error("Error fetching products:", error);
@@ -37,18 +54,7 @@ exports.getProductById = async (req, res) => {
       return res.status(404).json({ error: "Product not found" });
     }
 
-    const updatedImages = product.images.map((image) => {
-      if (image.startsWith("uploads/")) {
-        return `${req.protocol}://${req.get("host")}/${image}`;
-      } else {
-        return image;
-      }
-    });
-
-    const productWithUpdatedImages = {
-      ...product.toObject(),
-      images: updatedImages,
-    };
+    const productWithUpdatedImages = withNormalizedImages(req, product);
 
     res.json(productWithUpdatedImages);
   } catch (error) {
@@ -60,23 +66,15 @@ exports.getProductById = async (req, res) => {
 exports.getProductsByCategory = async (req, res) => {
   try {
     const { category } = req.params;
-    const products = await Product.find({ category });
-   
-    const productsWithUpdatedImages = products.map((product) => {
-      const updatedImages = product.images.map((image) => {
-        if (image.startsWith("uploads/")) {
-          return `${req.protocol}://${req.get("host")}/${image}`;
-        } else {
-          return image;
-        }
-      });
+    const products = await Product.find({ category })
+      .select("name category price images isFavorite")
+      .lean();
 
-      return {
-        ...product.toObject(),
-        images: updatedImages,
-      };
-    });
+    const productsWithUpdatedImages = products.map((product) =>
+      withNormalizedImages(req, product),
+    );
 
+    res.set("Cache-Control", "public, max-age=60");
     res.json(productsWithUpdatedImages);
   } catch (error) {
     console.error("Error fetching products by category:", error);
@@ -93,7 +91,8 @@ exports.getFavoriteProducts = async (req, res) => {
     }
 
     const favorites = await Favorite.find({ user: userId }).populate(
-      "products"
+      "products",
+      "name category price images isFavorite",
     );
 
     if (!favorites || favorites.length === 0) {
@@ -107,26 +106,15 @@ exports.getFavoriteProducts = async (req, res) => {
       return products;
     }, []);
 
-    const productsWithUpdatedImages = favoriteProducts.map((product) => {
-      const updatedImages = product.images.map((image) => {
-        if (image.startsWith("uploads/")) {
-          return `${req.protocol}://${req.get("host")}/${image}`;
-        } else {
-          return image;
-        }
-      });
-
-      return {
-        ...product.toObject(),
-        images: updatedImages,
-      };
-    });
+    const productsWithUpdatedImages = favoriteProducts.map((product) =>
+      withNormalizedImages(req, product),
+    );
 
     const token = req.headers["authorization"];
 
     if (token && token.startsWith("Bearer ")) {
-      const tokenValue = token.substring(7); 
-      res.header("x-auth-token", tokenValue); 
+      const tokenValue = token.substring(7);
+      res.header("x-auth-token", tokenValue);
     }
 
     res.json({ success: true, favoriteProducts: productsWithUpdatedImages });
@@ -135,7 +123,6 @@ exports.getFavoriteProducts = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
-
 
 exports.addProduct = async (req, res) => {
   try {
@@ -213,7 +200,9 @@ exports.createProduct = async (req, res) => {
   try {
     const { name, category, price, description } = req.body;
 
-    const images = req.files.map((file) => file.path);
+    const images = Array.isArray(req.files)
+      ? req.files.map((file) => file.path)
+      : [];
 
     const isFavorite = req.body.isFavorite || false;
 
@@ -233,4 +222,3 @@ exports.createProduct = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
-
